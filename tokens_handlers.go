@@ -25,6 +25,7 @@ func tokenBalanceOfHandler(w http.ResponseWriter, r *http.Request, ps httprouter
 	}
 
 	data := fmt.Sprintf("0x%v%v", ERC20Signatures[signBalanceOf], abi.Address)
+	println(hex.EncodeToString(data))
 	if ret, err := ethCall(abi.Contract, data); err == nil {
 		fmt.Fprintf(w, `{"value":"%v"}`, ret)
 	} else {
