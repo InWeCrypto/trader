@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -26,7 +25,7 @@ func tokenBalanceOfHandler(w http.ResponseWriter, r *http.Request, ps httprouter
 	}
 
 	data := fmt.Sprintf("0x%v%v", ERC20Signatures[signBalanceOf], abi.Address)
-	println(hex.EncodeToString(data))
+	println(data)
 	if ret, err := ethCall(abi.Contract, data); err == nil {
 		fmt.Fprintf(w, `{"value":"%v"}`, ret)
 	} else {
