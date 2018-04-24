@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
@@ -18,6 +19,8 @@ type Config struct {
 	gasUpdate        time.Duration
 	coinMarketCapURL string
 	postgres         string
+	proxy            string
+	remote           *url.URL
 }
 
 var globalConfig Config
@@ -64,6 +67,16 @@ func main() {
 				Value: "host=localhost port=5432 user=postgres dbname=trader sslmode=disable password=qwer1234",
 				Usage: "postgres connection string",
 			},
+			&cli.StringFlag{
+				Name:  "proxy",
+				Value: "/",
+				Usage: "proxy URI",
+			},
+			&cli.StringFlag{
+				Name:  "remote",
+				Value: "http://127.0.0.1:8545",
+				Usage: "remote URL",
+			},
 		},
 		Action: func(c *cli.Context) error {
 			globalConfig.listen = c.String("listen")
@@ -72,12 +85,24 @@ func main() {
 			globalConfig.coinMarketCapURL = c.String("coinmarketcapurl")
 			globalConfig.postgres = c.String("postgres")
 			globalConfig.insight = c.String("insight")
+			globalConfig.proxy = c.String("proxy")
+
+			remote, err := url.Parse(c.String("remote"))
+
+			if err != nil {
+				return err
+			}
+
+			globalConfig.remote = remote
+
 			log.Println("listen:", globalConfig.listen)
 			log.Println("geth:", globalConfig.geth)
 			log.Println("gas_update:", globalConfig.gasUpdate)
 			log.Println("coinmarketcapurl:", globalConfig.coinMarketCapURL)
 			log.Println("postgres:", globalConfig.postgres)
 			log.Println("insight:", globalConfig.insight)
+			log.Println("proxy:", globalConfig.proxy)
+			log.Println("remote:", globalConfig.remote.String())
 			// init
 			go updateGasTask()
 			defaultBlockTimeEstimator.init()
@@ -103,6 +128,10 @@ func main() {
 			router.POST("/btc/getUtxo", getUtxo)
 			router.POST("/btc/send", send)
 			router.POST("/btc/address", getAddress)
+
+			// proxy
+			router.POST(globalConfig.proxy, ReverseProxy)
+
 			log.Fatal(http.ListenAndServe(globalConfig.listen, router))
 			select {}
 		},
